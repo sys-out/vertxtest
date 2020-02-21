@@ -7,8 +7,6 @@ import io.vertx.core.Future;
  * - démarrage de l'appli,
  * - arrêt de l'appli,
  * - 
- * 
- * @author j.benoit
  */
 public interface IApp {
 
