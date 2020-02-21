@@ -31,9 +31,9 @@ public class MainVerticleTest {
   public void testThatTheServerIsStarted(TestContext tc) {
     Async async = tc.async();
     vertx.createHttpClient().getNow(10080, "localhost", "/", response -> {
-      tc.assertEquals(response.statusCode(), 200);
+      tc.assertEquals(response.statusCode(), 301);
       response.bodyHandler(body -> {
-        tc.assertTrue(body.length() > 0);
+        //tc.assertTrue(body.length() > 0);
         async.complete();
       });
     });

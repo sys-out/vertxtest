@@ -7,17 +7,18 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.StaticHandler;
 
 /**
+ * @author j.benoit
  *
  */
-public class NameAppVerticle extends AbstractVerticle implements IApp {
+public class EventFlowAppVerticle extends AbstractVerticle implements IApp {
 
 	/** Constante de configuration : port HTTP de l'application "name". */
-	public static final String CONFIG_HTTP_SERVER_PORT = "app.name.http.server.port";
+	public static final String CONFIG_HTTP_SERVER_PORT = "app.eventflow.http.server.port";
 	/** Constante de configuration : nom du bus d'évènements des applications. */
 	public static final String CONFIG_APP_EVENTS_QUEUE = "app.events.queue";
 
@@ -26,8 +27,8 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		final String appEventsQ = config().getString(CONFIG_APP_EVENTS_QUEUE, CONFIG_APP_EVENTS_QUEUE);
 		vertx.eventBus().publish( appEventsQ, eventMsg );
 	}
-
-
+	
+	
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE AbstractVerticle
 	/*-------------------------------------------------------*/
@@ -36,13 +37,13 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		// Le démarrage au sein de Vert.x est asynchrone et repose sur une promesse.
 		startTheApp().setHandler(promise);
 	}
-
+	
 	@Override
 	public void stop(Future<Void> promise) throws Exception {
 		// L'arrêt au sein de Vert.x est asynchrone et repose sur une promesse.
 		stopTheApp().setHandler( promise );
 	}
-
+	
 	/*-------------------------------------------------------*/
 	/* HTTP Server
 	/*-------------------------------------------------------*/
@@ -51,8 +52,8 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		Promise<Void> promise = Promise.promise();
 		HttpServer server = vertx.createHttpServer();
 
-		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10081);	// port 10081 par défaut.
-
+		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 100832);	// port 10083 par défaut.
+		
 		server
 		.requestHandler( generateRouter() )
 		.listen(portNumber, ar -> {
@@ -68,41 +69,37 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 
 		return promise.future();
 	}
-
+	
 	/** Création du dispatcher des requêtes HTTP reçues vers le Handler adéquat. */
 	private Router generateRouter() {
 		// Création du routeur pour traiter les requêtes HTTP reçues par le serveur.
 		Router router = Router.router(vertx);
-
 		// Affichage du menu des applications : /
-		router.get("/").handler(  this::rootHandler );
-
-		// Affichage du menu des applications : /menu/*
-		// Cette URL est servie par du contenu statique, voir dossier projet src/main/java/resources/webroot 
-		router.route("/menu/*").handler( StaticHandler.create() );
+		router.get("/").handler( this::menuHandler );
 
 		// Interface d'administration (web services)
-		router.get("/ws/:app/:cmd").handler( this::wsHandler );
-
+		// TODO
+		//router.post().handler( BodyHandler.create() ); 
+//		router.get("/ws/:app/:cmd").handler( this::apiHandler );
+		
 		return router;
 	}
-
+	
 	/*-------------------------------------------------------*/
 	/* HTTP Handlers
 	/*-------------------------------------------------------*/
-	/** root : redirigé vers la page menu, servie par du contenu statique. */
-	private void rootHandler( RoutingContext context ) {
-		context.response().setStatusCode(301);
-		context.response().putHeader("Location", "/menu/");
-		context.response().end();
+	/** Génération du menu. */
+	private void menuHandler( RoutingContext context ) {
+		HttpServerResponse response = context.response();
+		response.putHeader("Content-Type", "text/html").sendFile("templates/menu.html");
 	}
-
-	/** Services web d'administration des applications (start, stop...) */
+	
+	/** Interface d'administration des applications (start, stop...) */
 	private void wsHandler( RoutingContext context ) {
 		//TODO
 	}
 
-
+	
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE IApp
 	/*-------------------------------------------------------*/
@@ -111,7 +108,7 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		notifyAll( "L'application \"name\" démarre !" );
 		return startHttpServer();
 	}
-
+	
 	@Override
 	public Future<Void> stopTheApp() {
 		notifyAll( "L'application \"name\" s'arrête." );
@@ -119,5 +116,5 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		promise.complete();
 		return promise.future();
 	}
-
+	
 }

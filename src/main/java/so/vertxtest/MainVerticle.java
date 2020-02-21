@@ -9,10 +9,9 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 
 /** Gestionnaire d'applications */
 public class MainVerticle extends AbstractVerticle implements IAppManager {
@@ -27,7 +26,6 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 	
 	/** Cache des ID de déploiement des applications. */
 	private Map<String, String> appDeploymentID = new HashMap<String, String>();
-	
 
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE AbstractVerticle
@@ -37,7 +35,6 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		// Le démarrage au sein de Vert.x est asynchrone et repose sur une prommesse.
 		startHttpServer().setHandler(promise);
 	}
-
 	
 	/*-------------------------------------------------------*/
 	/* HTTP Server
@@ -69,27 +66,33 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 	private Router generateRouter() {
 		// Création du routeur pour traiter les requêtes HTTP reçues par le serveur.
 		Router router = Router.router(vertx);
-		// Affichage du menu des applications : /
-		router.get("/").handler( this::menuHandler );
 
-		// Interface d'administration (web services) 
-		router.post().handler( BodyHandler.create() ); 
-		router.get("/admin/:app/:cmd").handler( this::adminHandler );
-		
+		// Affichage du menu des applications : /
+		router.get("/").handler(  this::rootHandler );
+
+		// Affichage du menu des applications : /menu/*
+		// Ces URLs sont servies par du contenu statique, voir dossier projet src/main/java/resources 
+		router.route("/menu/*").handler( StaticHandler.create().setWebRoot("menu").setIndexPage("index.html") );
+		router.route("/js/*").handler( StaticHandler.create().setWebRoot("js") );
+
+		// Interface d'administration (web services)
+		router.post("/ws/:app/:cmd").handler( this::wsHandler );
+
 		return router;
 	}
 	
 	/*-------------------------------------------------------*/
 	/* HTTP Handlers
 	/*-------------------------------------------------------*/
-	/** Génération du menu. */
-	private void menuHandler( RoutingContext context ) {
-		HttpServerResponse response = context.response();
-		response.putHeader("Content-Type", "text/html").sendFile("templates/menu.html");
+	/** root page : redirigée vers la page menu, servie par du contenu statique. */
+	private void rootHandler( RoutingContext context ) {
+		context.response().setStatusCode(301);
+		context.response().putHeader("Location", "/menu/");
+		context.response().end();
 	}
-	
-	/** Interface d'administration des applications (start, stop...) */
-	private void adminHandler( RoutingContext context ) {
+
+	/** Services web d'administration des applications (start, stop...) */
+	private void wsHandler( RoutingContext context ) {
 		final List<String> validApps = Arrays.asList("name", "photo", "eventflow");
 		final List<String> validCmds = Arrays.asList("start", "stop");
 		
@@ -129,7 +132,11 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		});
 	}
 	
-	/** Définit le statut "started" de l'application dont le nom est paramétré. */ 
+	/** 
+	 * Définit le statut "started" de l'application dont le nom est paramétré.
+	 * L'info générée ici est basique, mais on pourrait imaginer la récupérer 
+	 * à travers un bus de communication dédié aux statuts des applications.
+	 */ 
 	private Future<String> onAppDeployed( String appName ) {
 		String appID = appDeploymentID.get( appName );
 		System.out.println( appName +" application was deployed with id="+ appID );
@@ -140,8 +147,11 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		return promise.future();
 	}
 	
-	
-	/** Définit le statut "stopped" de l'application dont le nom est paramétré */ 
+	/** 
+	 * Définit le statut "stopped" de l'application dont le nom est paramétré.
+	 * L'info générée ici est basique, mais on pourrait imaginer la récupérer 
+	 * à travers un bus de communication dédié aux statuts des applications.
+	 */ 
 	private Future<String> onAppUndeployed( String appName, String oldAppID ) {
 		System.out.println( appName +" with id="+ oldAppID +" was undeployed successfully" );
 		
@@ -150,59 +160,71 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		return promise.future();
 	}
 	
-
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE IAppManager
 	/*-------------------------------------------------------*/
 	@Override
 	public Future<String> startApp( final String appName ) {
+		System.out.println( "Trying to start "+ appName );
 		String appID = appDeploymentID.get( appName );
 		if( appID==null ) {
-			Promise<String> nameAppVerticleDeploymentResult = Promise.promise();
+			System.out.println( "Deploying verticle for "+ appName );
+			Promise<String> verticleDeploymentResult = Promise.promise();
 
-			Promise<String> nameAppVerticleDeployment = Promise.promise();
-			vertx.deployVerticle( new NameAppVerticle(), nameAppVerticleDeployment );
-			nameAppVerticleDeployment.future().setHandler( deploy -> {
+			Promise<String> verticleDeployment = Promise.promise();
+			switch( appName ) {
+				case "name": vertx.deployVerticle( new NameAppVerticle(), verticleDeployment ); break;
+				case "photo": vertx.deployVerticle( new PhotoAppVerticle(), verticleDeployment ); break;
+				default: vertx.deployVerticle( new EventFlowAppVerticle(), verticleDeployment ); break;
+			}
+			verticleDeployment.future().setHandler( deploy -> {
 				if( deploy.succeeded() ) {
+					System.out.println( "Verticle deployed with id="+ deploy.result());
 					appDeploymentID.put(appName, deploy.result() );
 					onAppDeployed(appName).setHandler( status -> {
-						nameAppVerticleDeploymentResult.handle( status );
+						verticleDeploymentResult.handle( status );
 					});
 				} else {
-					nameAppVerticleDeploymentResult.fail( deploy.cause() );
+					verticleDeploymentResult.fail( deploy.cause() );
 				}
 			});
-			return nameAppVerticleDeployment.future();
+			
+			return verticleDeploymentResult.future();
 		} else {
 			// App déjà démarrée.
-			return onAppDeployed( appID );
+			System.out.println( appName +" is already started.");
+			return onAppDeployed( appName );
 		}
 	}
 
 	@Override
 	public Future<String> stopApp( final String appName ) {
+		System.out.println( "Trying to stop "+ appName );
 		String appID = appDeploymentID.remove( appName );
 		if( appID!=null ) {
-			Promise<String> nameAppVerticleUndeploymentResult = Promise.promise();
+			System.out.println( "Undeploying verticle for "+ appName );
+			Promise<String> verticleUndeploymentResult = Promise.promise();
 			
 			// Arrêt de l'application
-			Promise<Void> nameAppVerticleUndeployment = Promise.promise();
-			vertx.undeploy(appID, nameAppVerticleUndeployment);
-			nameAppVerticleUndeployment.future().setHandler( undeploy -> {
+			Promise<Void> verticleUndeployment = Promise.promise();
+			vertx.undeploy(appID, verticleUndeployment);
+			verticleUndeployment.future().setHandler( undeploy -> {
 				if( undeploy.succeeded() ) {
+					System.out.println( "Verticle undeployed successfully.");
 					onAppUndeployed(appName, appID).setHandler( status -> {
-						nameAppVerticleUndeploymentResult.handle( status );
+						verticleUndeploymentResult.handle( status );
 					});
 				} else {
-					nameAppVerticleUndeploymentResult.fail( undeploy.cause() );
+					System.out.println( "Undeployement failed.");
+					verticleUndeploymentResult.fail( undeploy.cause() );
 				}
 			});
 			
-			return nameAppVerticleUndeploymentResult.future();
+			return verticleUndeploymentResult.future();
 		} else {
 			// App déjà arrêtée.
+			System.out.println( appName +" is already stopped.");
 			return onAppUndeployed( appName, "unknown" );
 		}
 	}
-
 }
