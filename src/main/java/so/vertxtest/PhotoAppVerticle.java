@@ -101,7 +101,7 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 	/*-------------------------------------------------------*/
 	/* HTTP Handlers
 	/*-------------------------------------------------------*/
-	/** root : redirigé vers la page menu, servie par du contenu statique. */
+	/** root : redirigé vers la page photo, servie par du contenu statique. */
 	private void rootHandler( RoutingContext context ) {
 		context.response().setStatusCode(301);
 		context.response().putHeader("Location", "/photo/");

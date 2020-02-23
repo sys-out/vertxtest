@@ -92,7 +92,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 
 	/** Accès au backend de l'application. */
 	private void wsHandler( RoutingContext context ) {
-		final List<String> validApps = Arrays.asList("name", "photo", "eventflow");
+		final List<String> validApps = Arrays.asList("name", "photo", "event");
 		final List<String> validCmds = Arrays.asList("start", "stop");
 		
 		// Application et verbe demandés via l'URL.
@@ -145,9 +145,9 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		JsonObject status = new JsonObject();
 		int port = 10080;
 		switch( appName ) {
-		case "name": port+=1; break;
-		case "photo": port+=2; break;
-		default: port+=3; break;
+		case "name":	port=10081; break;
+		case "photo":	port=10082; break;
+		default:		port=10083; break;
 		}
 		status.put( "app", appName ).put( "status", "started" ).put( "id",  appID ).put( "port", port );
 		promise.complete(status.encode());
@@ -182,7 +182,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 			switch( appName ) {
 				case "name": vertx.deployVerticle( new NameAppVerticle(), verticleDeployment ); break;
 				case "photo": vertx.deployVerticle( new PhotoAppVerticle(), verticleDeployment ); break;
-				default: vertx.deployVerticle( new EventFlowAppVerticle(), verticleDeployment ); break;
+				default: vertx.deployVerticle( new EventAppVerticle(), verticleDeployment ); break;
 			}
 			verticleDeployment.future().setHandler( deploy -> {
 				if( deploy.succeeded() ) {

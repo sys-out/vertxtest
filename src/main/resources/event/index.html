@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="sys-out">
+<meta name="description" content="Application d'affichage d'évènements du test de Vert.x (application web en angularjs/requirejs)">
+<meta name="viewport" content="user-scalable=no, initial-scale=1, width=device-width" />
+<title>Changement de photo</title>
+
+</head>
+<body>
+
+<div id="page">
+
+	<so-event-viewer />
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vertx/3.8.3/vertx-eventbus.min.js" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.9/angular.min.js"></script>
+<script data-main="../js/event" src="../js/libs/require-2.3.6.js"></script>
+
+</body>
+</html>

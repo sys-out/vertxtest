@@ -59,13 +59,13 @@ angular.module('soServices', [])
         _this.$scope.$on('$destroy', fnUnsuscribe);			// call it on scope destruction.
     };
 
-    // IS_LOADING notification
-	var evIS_LOADING = 'so:is_loading'; // + boolean
-	this.onIsLoading = function(_this, callback) {
-		return subscribe(evIS_LOADING, _this, callback);
+    // NEW_MESSAGE notification
+	var evNEW_MESSAGE = 'so:new_message'; // + string
+	this.onNewMessage = function(_this, callback) {
+		return subscribe(evNEW_MESSAGE, _this, callback);
     };
-	this.notifyIsLoading = function(bool) {
-        $rootScope.$emit(evIS_LOADING, bool);
+	this.notifyNewMessage = function(msg) {
+        $rootScope.$emit(evNEW_MESSAGE, msg);
     };
     
 }]) // Fin du soNotifyService

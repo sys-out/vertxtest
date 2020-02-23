@@ -32,7 +32,7 @@ function(
 	.value('soData', {
 		 "name": { status: 'stopped', id:'unknown', url:'' }
 		,"photo": { status: 'stopped', id:'unknown', url:'' }
-		,"eventFlow": { status: 'stopped', id:'unknown', url:'' }
+		,"event": { status: 'stopped', id:'unknown', url:'' }
 	})
 
 /*requirejs*/ });
