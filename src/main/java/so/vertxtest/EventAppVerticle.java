@@ -90,8 +90,7 @@ public class EventAppVerticle extends AbstractVerticle implements IApp {
 		BridgeOptions bridgeOptions = new BridgeOptions().addOutboundPermitted(
 			new PermittedOptions().setAddress( config().getString(CONFIG_APP_EVENTS_QUEUE, CONFIG_APP_EVENTS_QUEUE) )
 		);
-		sockJSHandler.bridge( bridgeOptions );
-		router.route("/ws/event").handler( sockJSHandler );
+		router.mountSubRouter("/ws/event", sockJSHandler.bridge(bridgeOptions) );
 		
 		return router;
 	}

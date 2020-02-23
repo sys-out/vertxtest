@@ -4,31 +4,24 @@ define([], function() {
  * Controller for the directive
  * $scope is required by the NotifyService.
  */
-function EventViewerCtrl($log, $scope, soNotifyService) {
+function EventViewerCtrl($log, $scope) {
 	this.$log = $log;
 	this.$scope = $scope;
 	
 	this.messages = [];
 	
 	var eb = new EventBus(window.location.protocol + "//" + window.location.host + "/ws/event");
-	eb.onopen = function() {
-		eb.registerHandler("app.events.queue", function (error, message) {
+	eb.onopen = () => {
+		eb.registerHandler("app.events.queue", (error, message) => {
 			if( message.body ) {
-				soNotifyService.notifyNewMessage( message.body );
+				$scope.$apply( () => {
+					this.messages.push( message.body );
+				});
 			}
 		});
 	}
-
-	this.eventBus = eb;
-	soNotifyService.onNewMessage( this, this.onNewMessage );
 }
-EventViewerCtrl.$inject = ['$log', '$scope', 'soNotifyService'];
-
-//------- Controller's methods
-/** Réception d'un nouveau message. */
-EventViewerCtrl.prototype.onNewMessage = function( msg ) {
-	this.messages.push(msg);
-}
+EventViewerCtrl.$inject = ['$log', '$scope'];
 
 
 /********************************
