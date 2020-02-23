@@ -1,7 +1,7 @@
 /*Bootstrapping angularjs */
 require([
 		 '../js/services/so-services'
-		,'../js/app/so-menu-app']
+		,'../js/app/so-name-app']
 	, function() {
-	 angular.bootstrap(document, ['soMenuApp']);
+	 angular.bootstrap(document, ['soNameApp']);
 });

@@ -9,6 +9,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
@@ -18,8 +19,6 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 	
 	/** Constante de configuration : port HTTP du gestionnaire d'applications. */
 	public static final String CONFIG_HTTP_SERVER_PORT = "http.server.port";
-	/** Constante de configuration : nom du bus de statut des applications. */
-	public static final String CONFIG_APP_STATUS_QUEUE = "app.status.queue";
 	/** Constante de configuration : nom du bus d'évènements des applications. */
 	public static final String CONFIG_APP_EVENTS_QUEUE = "app.events.queue";
 	
@@ -143,7 +142,15 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		
 		Promise<String> promise = Promise.promise();
 		// La lecture du statut de l'application pourrait être dynamique.
-		promise.complete("{\"app\":\""+appName+"\",\"status\":\"started\",\"id\":\""+appID+"\"}");
+		JsonObject status = new JsonObject();
+		int port = 10080;
+		switch( appName ) {
+		case "name": port+=1; break;
+		case "photo": port+=2; break;
+		default: port+=3; break;
+		}
+		status.put( "app", appName ).put( "status", "started" ).put( "id",  appID ).put( "port", port );
+		promise.complete(status.encode());
 		return promise.future();
 	}
 	

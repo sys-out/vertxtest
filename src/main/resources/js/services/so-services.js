@@ -21,6 +21,19 @@ angular.module('soServices', [])
 		);
 	}
 	
+	this.changeName = function( newName ) {
+		return $http.post(
+			  app.wsBase+'name'
+			, {"value": newName}
+			, {
+				headers: {
+					'Content-Type':'application/json'
+				}
+			}
+			
+		);
+	}
+	
 }]) // Fin du soAppService
 
 //-------------------------------------------------------------

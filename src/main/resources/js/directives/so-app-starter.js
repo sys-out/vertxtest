@@ -3,12 +3,13 @@ define([], function() {
 /********************************
  * Controller for the directive
  */
-function AppStatusCtrl($log, soAppService, soCacheService) {
+function AppStatusCtrl($log, $window, soAppService, soCacheService) {
+	this.$log = $log;
+	this.$window = $window;
 	this.soAppService = soAppService;
 	this.soCacheService = soCacheService;
-	this.$log = $log;
 }
-AppStatusCtrl.$inject = ['$log', 'soAppService', 'soCacheService'];
+AppStatusCtrl.$inject = ['$log', '$window', 'soAppService', 'soCacheService'];
 
 //------- Controller's methods
 /** App status. */
@@ -20,8 +21,9 @@ AppStatusCtrl.prototype.getStatus = function() {
 AppStatusCtrl.prototype.start = function() {
 	this.soCacheService.updateAppStatus( this.app, "starting" );
 	this.soAppService.start( this.app ).then( d => {	// Success handler
-			if( d && d.data && d.data.status ) {
+			if( d && d.data ) {
 				this.soCacheService.updateAppStatus( this.app, d.data.status );
+				this.soCacheService.updateAppPort( this.app, d.data.port );
 			}
 		}, () => { // Error handler
 			this.soCacheService.updateAppStatus( this.app, "unknown" );
@@ -42,6 +44,13 @@ AppStatusCtrl.prototype.stop = function() {
 			this.$log.error( 'Error while stopping app "'+ this.app +'"' );
 		}
 	);
+}
+
+/** Opens the application in a new tab. */
+AppStatusCtrl.prototype.view = function() {
+	if( this.soCacheService.getAppStatus(this.app)==="started" ) {
+		this.$window.open( this.soCacheService.getAppUrl(this.app), '_blank' );
+	}
 }
 
 /** Button's disabled property. */
@@ -68,6 +77,10 @@ function AppStatusDrtv() {
 				<div class="soStopButton">
 					<button type="button" title="Arrêter" ng-click="ctrl.stop()" ng-disabled="!ctrl.isStarted()">Arrêter</button>
 				</div>
+				<div class="soViewButton">
+					<button type="button" title="Voir l'application" ng-click="ctrl.view()" ng-show="ctrl.isStarted()">Voir l'application</button>
+				</div>
+
 			</div>
 		</div>	
 	`;

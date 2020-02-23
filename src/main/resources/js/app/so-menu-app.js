@@ -1,16 +1,15 @@
 /*requirejs*/ define(
-	[ '../directives/so-app'
+	[ '../directives/so-app-starter'
 	],
 function(
-	soApp
+	soAppStarter
 ) {
 
 	angular.module('soMenuApp', [
 		,'soServices'
-		,'infinite-scroll'
 	])
 	
-	.directive('soApp', soApp)
+	.directive('soAppStarter', soAppStarter)
 	
 	.service( 'soCacheService', ['soData', function(soData) {
 		this.updateAppStatus = function( appName, newStatus ) {
@@ -18,6 +17,15 @@ function(
 		}
 		this.getAppStatus = function( appName ) {
 			return soData[appName].status;
+		}
+		this.getAppUrl = function( appName ) {
+			return soData[appName].url;
+		}
+		this.updateAppPort = function( appName, newPort ) {
+			if( Number. isInteger(newPort) )
+				soData[appName].url = "http://127.0.0.1:"+newPort;
+			else 
+				soData[appName].url = "";
 		}
 	}])
 	
@@ -27,10 +35,4 @@ function(
 		,"eventFlow": { status: 'stopped', id:'unknown', url:'' }
 	})
 
-	.filter('htmlToPlainText', function() {
-		return function(text) {
-			return angular.element('<div>'+text+'</div>').text();
-		}
-	})
-	
 /*requirejs*/ });
