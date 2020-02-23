@@ -34,6 +34,18 @@ angular.module('soServices', [])
 		);
 	}
 	
+	this.changePhoto = function( photoData ) {
+		return $http.post(
+			  app.wsBase+'photo'
+			, photoData
+			, {
+				headers: {
+					'Content-Type':undefined
+				}
+			}
+		);
+	}
+	
 }]) // Fin du soAppService
 
 //-------------------------------------------------------------

@@ -3,18 +3,22 @@
  */
 package so.vertxtest;
 
+import java.io.File;
+import java.util.Base64;
+import java.util.Set;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.StaticHandler;
 
-/**
- * @author j.benoit
- *
- */
+/** Application "photo" */
 public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 
 	/** Constante de configuration : port HTTP de l'application "photo". */
@@ -24,11 +28,13 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 
 	/** fonction utilitaire. */
 	private void notifyAll( String eventMsg ) {
-		final String appEventsQ = config().getString(CONFIG_APP_EVENTS_QUEUE, CONFIG_APP_EVENTS_QUEUE);
+		final String appEventsQ = config().getString( CONFIG_APP_EVENTS_QUEUE, CONFIG_APP_EVENTS_QUEUE );
 		vertx.eventBus().publish( appEventsQ, eventMsg );
 	}
-	
-	
+
+	/** Photo de l'utilisateur. */
+	private String base64EncodedPhoto = "";
+
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE AbstractVerticle
 	/*-------------------------------------------------------*/
@@ -37,13 +43,13 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 		// Le démarrage au sein de Vert.x est asynchrone et repose sur une promesse.
 		startTheApp().setHandler(promise);
 	}
-	
+
 	@Override
 	public void stop(Future<Void> promise) throws Exception {
 		// L'arrêt au sein de Vert.x est asynchrone et repose sur une promesse.
 		stopTheApp().setHandler( promise );
 	}
-	
+
 	/*-------------------------------------------------------*/
 	/* HTTP Server
 	/*-------------------------------------------------------*/
@@ -53,7 +59,7 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 		HttpServer server = vertx.createHttpServer();
 
 		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10082);	// port 10082 par défaut.
-		
+
 		server
 		.requestHandler( generateRouter() )
 		.listen(portNumber, ar -> {
@@ -69,52 +75,79 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 
 		return promise.future();
 	}
-	
+
 	/** Création du dispatcher des requêtes HTTP reçues vers le Handler adéquat. */
 	private Router generateRouter() {
 		// Création du routeur pour traiter les requêtes HTTP reçues par le serveur.
 		Router router = Router.router(vertx);
-		// Affichage du menu des applications : /
-		router.get("/").handler( this::menuHandler );
+
+		// Gestion du payload
+		router.route().handler( BodyHandler.create().setBodyLimit(2097152) ); // upload limité à 2Mo
+		
+		// Gestion de la racine : /
+		router.get("/").handler(  this::rootHandler );
+
+		// Affichage de l'application : /photo/*
+		// Cette URL est servie par du contenu statique, voir dossier projet src/main/java/resources/photo 
+		router.route("/photo/*").handler( StaticHandler.create().setWebRoot("photo").setIndexPage("index.html") );
+		router.route("/js/*").handler( StaticHandler.create().setWebRoot("js") );
 
 		// Interface d'administration (web services)
-		// TODO
-		//router.post().handler( BodyHandler.create() ); 
-//		router.get("/ws/:app/:cmd").handler( this::apiHandler );
-		
+		router.post("/ws/photo").handler( this::wsHandler );
+
 		return router;
 	}
-	
+
 	/*-------------------------------------------------------*/
 	/* HTTP Handlers
 	/*-------------------------------------------------------*/
-	/** Génération du menu. */
-	private void menuHandler( RoutingContext context ) {
-		HttpServerResponse response = context.response();
-		response.putHeader("Content-Type", "text/html").sendFile("templates/menu.html");
-	}
-	
-	/** Interface d'administration des applications (start, stop...) */
-	private void wsHandler( RoutingContext context ) {
-		//TODO
+	/** root : redirigé vers la page menu, servie par du contenu statique. */
+	private void rootHandler( RoutingContext context ) {
+		context.response().setStatusCode(301);
+		context.response().putHeader("Location", "/photo/");
+		context.response().end();
 	}
 
-	
+	/** Accès au backend de l'application. */
+	private void wsHandler( RoutingContext context ) {
+		Set<FileUpload> uploads = context.fileUploads();
+		int count = 0;
+		for( FileUpload f : uploads ) {
+			if( ++count==1 ) {
+				String mimeType=f.contentType();
+				String fileName=f.fileName();
+				Buffer uploaded = vertx.fileSystem().readFileBlocking(f.uploadedFileName());
+				byte[] payload = uploaded.getBytes();
+				
+				base64EncodedPhoto = Base64.getEncoder().encodeToString( payload );
+				String dataScheme = "data:"+mimeType+";base64,"+base64EncodedPhoto;
+				
+				System.out.println(dataScheme);
+				
+				// On signale ce changement dans le bus d'évènements
+				notifyAll( "La photo a changé : "+ fileName );
+				context.response().putHeader("Content-Type", "text/plain").end( dataScheme );
+			}			
+			new File(f.uploadedFileName()).delete();
+		}
+	}
+
+
 	/*-------------------------------------------------------*/
 	/* IMPLEMENTATION DE IApp
 	/*-------------------------------------------------------*/
 	@Override
 	public Future<Void> startTheApp() {
-		notifyAll( "L'application \"name\" démarre !" );
+		notifyAll( "L'application \"photo\" démarre !" );
 		return startHttpServer();
 	}
-	
+
 	@Override
 	public Future<Void> stopTheApp() {
-		notifyAll( "L'application \"name\" s'arrête." );
+		notifyAll( "L'application \"photo\" s'arrête." );
 		Promise<Void> promise = Promise.promise();
 		promise.complete();
 		return promise.future();
 	}
-	
+
 }

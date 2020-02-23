@@ -90,7 +90,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		context.response().end();
 	}
 
-	/** Services web d'administration des applications (start, stop...) */
+	/** Accès au backend de l'application. */
 	private void wsHandler( RoutingContext context ) {
 		final List<String> validApps = Arrays.asList("name", "photo", "eventflow");
 		final List<String> validCmds = Arrays.asList("start", "stop");

@@ -79,10 +79,10 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		// Gestion du payload
 		router.route().handler(BodyHandler.create());
 		
-		// Affichage du menu des applications : /
+		// Gestion de la racine : /
 		router.get("/").handler(  this::rootHandler );
 
-		// Affichage du menu des applications : /menu/*
+		// Affichage de l'application : /name/*
 		// Cette URL est servie par du contenu statique, voir dossier projet src/main/java/resources/name 
 		router.route("/name/*").handler( StaticHandler.create().setWebRoot("name").setIndexPage("index.html") );
 		router.route("/js/*").handler( StaticHandler.create().setWebRoot("js") );
@@ -103,7 +103,7 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		context.response().end();
 	}
 
-	/** Services web d'administration des applications (start, stop...) */
+	/** Accès au backend de l'application. */
 	private void wsHandler( RoutingContext context ) {
 		JsonObject payload = context.getBodyAsJson();
 		value = payload.getString( "value" );
