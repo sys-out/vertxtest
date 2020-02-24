@@ -108,17 +108,4 @@
     </plugins>
   </build>
 
-	<distributionManagement>
-		<repository>
-			<id>so-nexus</id>
-			<name>Releases</name>
-			<url>http://localhost:9081/repository/so-releases</url>
-		</repository>
-		<snapshotRepository>
-			<id>so-nexus</id>
-			<name>Snapshots</name>
-			<url>http://localhost:9081/repository/so-snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 </project>
