@@ -43,6 +43,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		Promise<Void> promise = Promise.promise();
 		HttpServer server = vertx.createHttpServer();
 
+		// Lecture du numéro de port paramétré pour cette application.
 		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10080);	// port 10080 par défaut.
 		
 		server
@@ -70,7 +71,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 		router.get("/").handler(  this::rootHandler );
 
 		// Affichage du menu des applications : /menu/*
-		// Ces URLs sont servies par du contenu statique, voir dossier projet src/main/java/resources 
+		// Ces URLs sont servies par du contenu statique, voir dossier projet src/main/java/resources/menu 
 		router.route("/menu/*").handler( StaticHandler.create().setWebRoot("menu").setIndexPage("index.html") );
 		router.route("/js/*").handler( StaticHandler.create().setWebRoot("js") );
 
@@ -173,8 +174,10 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 	@Override
 	public Future<String> startApp( final String appName ) {
 		System.out.println( "Trying to start "+ appName );
+		// On vérifie si cette application est déjà démarrée en recherchant son ID éventuel.
 		String appID = appDeploymentID.get( appName );
 		if( appID==null ) {
+			// L'application n'a pas encore été démarrée => on le fait maintenant.
 			System.out.println( "Deploying verticle for "+ appName );
 			Promise<String> verticleDeploymentResult = Promise.promise();
 
@@ -186,7 +189,9 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 			}
 			verticleDeployment.future().setHandler( deploy -> {
 				if( deploy.succeeded() ) {
+					// L'application est désormais démarrée => on le signale.
 					System.out.println( "Verticle deployed with id="+ deploy.result());
+					// On mémorise son ID avant.
 					appDeploymentID.put(appName, deploy.result() );
 					onAppDeployed(appName).setHandler( status -> {
 						verticleDeploymentResult.handle( status );
@@ -198,7 +203,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 			
 			return verticleDeploymentResult.future();
 		} else {
-			// App déjà démarrée.
+			// L'application a déjà été démarrée => on le signale.
 			System.out.println( appName +" is already started.");
 			return onAppDeployed( appName );
 		}
@@ -207,6 +212,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 	@Override
 	public Future<String> stopApp( final String appName ) {
 		System.out.println( "Trying to stop "+ appName );
+		// On recherche l'ID de l'application à stopper.
 		String appID = appDeploymentID.remove( appName );
 		if( appID!=null ) {
 			System.out.println( "Undeploying verticle for "+ appName );
@@ -217,6 +223,7 @@ public class MainVerticle extends AbstractVerticle implements IAppManager {
 			vertx.undeploy(appID, verticleUndeployment);
 			verticleUndeployment.future().setHandler( undeploy -> {
 				if( undeploy.succeeded() ) {
+					// L'application est désormais démarrée => on le signale.
 					System.out.println( "Verticle undeployed successfully.");
 					onAppUndeployed(appName, appID).setHandler( status -> {
 						verticleUndeploymentResult.handle( status );

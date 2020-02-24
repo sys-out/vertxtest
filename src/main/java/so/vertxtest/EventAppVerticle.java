@@ -53,6 +53,7 @@ public class EventAppVerticle extends AbstractVerticle implements IApp {
 		Promise<Void> promise = Promise.promise();
 		HttpServer server = vertx.createHttpServer();
 
+		// Lecture du numéro de port paramétré pour cette application.
 		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10083);	// port 10083 par défaut.
 		
 		server

@@ -53,6 +53,7 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		Promise<Void> promise = Promise.promise();
 		HttpServer server = vertx.createHttpServer();
 
+		// Lecture du numéro de port paramétré pour cette application.
 		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10081);	// port 10081 par défaut.
 
 		server
@@ -108,7 +109,7 @@ public class NameAppVerticle extends AbstractVerticle implements IApp {
 		JsonObject payload = context.getBodyAsJson();
 		value = payload.getString( "value" );
 		
-		// On signale ce changement dans le bus d'évènements
+		// On signale ce changement dans le bus d'évènements.
 		notifyAll( "La nom a changé pour la valeur \""+ value +"\"" );
 		context.response().end();
 	}

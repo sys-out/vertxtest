@@ -5,8 +5,7 @@ import io.vertx.core.Future;
 /**
  * Cette interface décrit les fonctionnalités d'une Application, au sens de notre test :
  * - démarrage de l'appli,
- * - arrêt de l'appli,
- * - 
+ * - arrêt de l'appli.
  */
 public interface IApp {
 

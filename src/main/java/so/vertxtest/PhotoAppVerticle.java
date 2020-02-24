@@ -58,6 +58,7 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 		Promise<Void> promise = Promise.promise();
 		HttpServer server = vertx.createHttpServer();
 
+		// Lecture du numéro de port paramétré pour cette application.
 		int portNumber = config().getInteger(CONFIG_HTTP_SERVER_PORT, 10082);	// port 10082 par défaut.
 
 		server
@@ -113,9 +114,12 @@ public class PhotoAppVerticle extends AbstractVerticle implements IApp {
 		Set<FileUpload> uploads = context.fileUploads();
 		int count = 0;
 		for( FileUpload f : uploads ) {
+			// On traite la 1ère image uploadée.
 			if( ++count==1 ) {
 				String mimeType=f.contentType();
 				String fileName=f.fileName();
+				// Lecture de l'image : le volume de données à traiter est "petit" donc on se permet une lecture synchrone.
+				// En pratique, il faudrait probablement rendre ce traitement asynchrone pour respecter la règle d'or de Vert.x.
 				Buffer uploaded = vertx.fileSystem().readFileBlocking(f.uploadedFileName());
 				byte[] payload = uploaded.getBytes();
 				
